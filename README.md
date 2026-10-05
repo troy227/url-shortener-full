@@ -1,26 +1,54 @@
-# base-project-init
+Problem Statement - Build a URL shortener.
 
-Starter monorepo for full-stack / LLD interviews. **Clone or copy this repo**, then add domain code using the conventions in [`backend/README.md`](backend/README.md).
+A user can create a short link from a long target URL. The system returns a short code and a short URL. Anyone can resolve a code and be redirected (or receive the target URL as JSON if redirect is awkward in the demo). Optionally allow a custom alias. Reject an invalid URL. Reject a duplicate custom alias.
 
-| Layer | Stack |
-|-------|--------|
-| Backend | NestJS, Postgres, `sequelize-typescript`, CLI migrations, `class-validator` |
-| Frontend | Vue 3 + Vite |
-| Mock API | json-server → `frontend/src/mock/db.json` (Vite proxies `/api`) |
+Vue: a form to paste a URL (and optional alias), a list of created links with code, target, and clicks, and a way to "open" or copy the short path.
 
-## Quick start
+## PLAN URL Shortener
 
-1. `cp backend/.env.example backend/.env` — set Postgres credentials.
-2. `createdb myapp_db` (or your `DATABASE_NAME`).
-3. From repo root: `npm run setup`
-4. `npm run backend:dev` → `http://localhost:3000/health`
-5. `npm run frontend:dev`
-6. Optional: `npm run mock:dev` → `fetch('/api/records')` in dev
+### Functional Requirements
+1. User should be able to shorten a URL
+2. When user clicks on shorten URL, they should be redirected to the long url.
+3. Optionally support custom code
+4. Optionally support expiry
 
-## Backend structure (summary)
+### Non Functional Requirements
+1. Low latency of redirects
+2. short code should be unique
 
-When adding a resource, follow **migration → model → repository → service → DTO → controller → module**. Details, validation, and npm scripts are in **[backend/README.md](backend/README.md)**.
 
-## Cursor / AI
+### Core entities
+1. URLS
+ - id - pkey
+ - shortCode (unique)
+ - longUrl
+ - expiry (optional)
+ - created at
 
-Project rule: [`.cursor/rules/nest-backend-template.mdc`](.cursor/rules/nest-backend-template.mdc) — copy this folder when spinning up a new repo so agents follow the same layout.
+### APIs
+
+1. POST /urls - Converts a given long url to short url
+API Request Body - {
+    longUrl: string,
+    shortCode?: string,
+    expiry?: string,
+}
+Response - {
+    shortUrl: string
+}
+
+2. GET /:shortCode
+FE should go to BASE_URL/shortCode and get /urls/{shortCode} which returns a 
+{longUrl: string} with status code 302 then FE redirects to longUrl.
+
+
+### URL Encoding logic
+Based on the inserted ID, do an update query to generate the short code as last 6 characters of base62 encoded.
+
+
+## FE
+
+1. A Home page view with title at the top. 
+2. There should be a text box to enter the long url and a "shorten" button which calls the POST /urls API.
+3. The POST api returns a short URL which will be displayed on a screen with a "Copy" button.
+4. When user clicks on the short url or enters the short url in the browser, it should hit the GET /shortcode API and redirect to the long URL
